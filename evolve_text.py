@@ -189,7 +189,7 @@ def crossover(str1, str2):
         str1.insert(i, temp2[i - point1])
         del str2[i]
         str2.insert(i, temp1[i - point1])
-    return str1, str2
+    return (str1, str2)
 
 # -----------------------------------------------------------------------------
 # DEAP Toolbox and Algorithm setup
@@ -249,7 +249,7 @@ def evolve_string(text):
 
     return pop, log
 
-
+# print(crossover(list("ABCDEFGHIJKLM"),list("RSTUVWXYZ")))
 # -----------------------------------------------------------------------------
 # Run if called from the command line
 # -----------------------------------------------------------------------------
@@ -271,6 +271,7 @@ if __name__ == "__main__":
             msg = "Given text {goal!r} contains illegal character {char!r}.\n"
             msg += "Valid set: {val!r}\n"
             raise ValueError(msg.format(goal=goal, char=char, val=VALID_CHARS))
+
 
     # Run evolutionary algorithm
     pop, log = evolve_string(goal)
