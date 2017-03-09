@@ -92,8 +92,31 @@ class Message(list):
 # Genetic operators
 # -----------------------------------------------------------------------------
 
-# TODO: Implement levenshtein_distance function (see Day 9 in-class exercises)
-# HINT: Now would be a great time to implement memoization if you haven't
+known = {',':0}
+
+def levenshtein_distance(str1,str2):
+    """
+    returns number of simple operations required to make strings identical
+
+    >>> levenshtein_distance('cat','cat')
+    0
+
+    >>> levenshtein_distance('c', 'cat')
+    2
+    """
+    n = str1 + ',' + str2
+    if n in known:
+        return known[n]
+    elif str1 == str2:
+        res = 0
+    elif len(str1) == 0 or len(str2) == 0:
+        res = len(str1) + len(str2)
+    elif str1[0] == str2[0]:
+        res = levenshtein_distance(str1[1:len(str1)], str2[1:len(str2)])
+    elif str1[0] != str2[0]:
+        res = 1 + levenshtein_distance(str1[1:len(str1)], str2[1:len(str2)])
+    known[n] = res
+    return res
 
 def evaluate_text(message, goal_text, verbose=VERBOSE):
     """
@@ -121,16 +144,52 @@ def mutate_text(message, prob_ins=0.05, prob_del=0.05, prob_sub=0.05):
     """
 
     if random.random() < prob_ins:
-        # TODO: Implement insertion-type mutation
-        pass
-
-    # TODO: Also implement deletion and substitution mutations
-    # HINT: Message objects inherit from list, so they also inherit
-    #       useful list methods
-    # HINT: You probably want to use the VALID_CHARS global variable
-
+        # insertion-type mutation
+        insert_loc = random.randint(0,len(message) - 1)
+        to_insert = VALID_CHARS[random.randint(0,len(VALID_CHARS)) - 1]
+        message.insert(insert_loc, to_insert)
+    if random.random() < prob_del:
+        # deletion-type mutation
+        del_loc = random.randint(0,len(message) - 1)
+        del message[del_loc]
+    if random.random() < prob_sub:
+        # substitution-type mutation
+        sub_loc = random.randint(0,len(message)- 1)
+        to_sub = VALID_CHARS[random.randint(0,len(VALID_CHARS)) - 1]
+        del message[sub_loc]
+        message.insert(sub_loc, to_sub)
     return (message, )   # Length 1 tuple, required by DEAP
 
+
+def crossover(str1, str2):
+    """
+    manual implementation of the cxTwoPoint function in DEAP
+    """
+    length1 = len(str1)
+    length2 = len(str2)
+    length = 0
+    if length1 < length2: # finds shorter of the lenghts
+        length = length1
+    else:
+        length = length2
+    point_a = random.randint(0,length - 1)
+    point_b = random.randint(0,length - 1)
+    point1 = 0
+    point2 = 0
+    if point_a < point_b:
+        point1 = point_a
+        point2 = point_b
+    else:
+        point1 = point_b
+        point2 = point_a
+    temp1 = str1[point1:point2]
+    temp2 = str2[point1:point2]
+    for i in range(point1,point2):
+        del str1[i]
+        str1.insert(i, temp2[i - point1])
+        del str2[i]
+        str2.insert(i, temp1[i - point1])
+    return str1, str2
 
 # -----------------------------------------------------------------------------
 # DEAP Toolbox and Algorithm setup
@@ -203,7 +262,7 @@ if __name__ == "__main__":
         # Pretty much the opposite of http://xkcd.com/534
         goal = "SKYNET IS NOW ONLINE"
     else:
-        goal = " ".join(sys.argv[1:])
+        goal = "SKYNET IS NOW ONLINE"#"".join(sys.argv[1:])
 
     # Verify that specified goal contains only known valid characters
     # (otherwise we'll never be able to evolve that string)
