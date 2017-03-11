@@ -118,6 +118,33 @@ def levenshtein_distance(str1,str2):
     known[n] = res
     return res
 
+def modified_levenshtein_distance(str1,str2):
+    """
+    returns number of simple operations required to make strings identical,
+    modified so it weights the distances based on the distance between letters.
+    used as an experiment
+    """
+    n = str1 + ',' + str2
+    if n in known:
+        return known[n]
+    elif str1 == str2:
+        res = 0
+    elif len(str1) == 0 or len(str2) == 0:
+        val1 = 0
+        val2 = 0
+        for char in str1:
+            val1 += ord(char)
+        for char in str2:
+            val2 += ord(char)
+        return val1 + val2
+    elif str1[0] == str2[0]:
+        res = levenshtein_distance(str1[1:len(str1)], str2[1:len(str2)])
+    elif str1[0] != str2[0]:
+        res = abs(ord(str1[0]) - ord(str2[0])) + levenshtein_distance(str1[1:len(str1)], str2[1:len(str2)])
+    known[n] = res
+    return res
+
+
 def evaluate_text(message, goal_text, verbose=VERBOSE):
     """
     Given a Message and a goal_text string, return the Levenshtein distance
@@ -208,7 +235,7 @@ def get_toolbox(text):
 
     # Genetic operators
     toolbox.register("evaluate", evaluate_text, goal_text=text)
-    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mate", crossover)
     toolbox.register("mutate", mutate_text)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
@@ -239,13 +266,23 @@ def evolve_string(text):
     stats.register("max", numpy.max)
 
     # Run simple EA
-    # (See: http://deap.gel.ulaval.ca/doc/dev/api/algo.html for details)
+    (See: http://deap.gel.ulaval.ca/doc/dev/api/algo.html for details)
     pop, log = algorithms.eaSimple(pop,
                                    toolbox,
                                    cxpb=0.5,    # Prob. of crossover (mating)
                                    mutpb=0.2,   # Probability of mutation
                                    ngen=500,    # Num. of generations to run
                                    stats=stats)
+
+    # For testing eaMuPulsLambda
+    # pop, log = algorithms.eaMuPlusLambda(pop,
+    #                                toolbox,
+    #                                mu=50,       # number of parents chosen
+    #                                lambda_=500, # number of offspring
+    #                                cxpb=0.5,    # Prob. of crossover (mating)
+    #                                mutpb=0.2,   # Probability of mutation
+    #                                ngen=500,    # Num. of generations to run
+    #                                stats=stats)
 
     return pop, log
 
@@ -262,7 +299,7 @@ if __name__ == "__main__":
         # Pretty much the opposite of http://xkcd.com/534
         goal = "SKYNET IS NOW ONLINE"
     else:
-        goal = "SKYNET IS NOW ONLINE"#"".join(sys.argv[1:])
+        goal = "".join(sys.argv[1:])
 
     # Verify that specified goal contains only known valid characters
     # (otherwise we'll never be able to evolve that string)
